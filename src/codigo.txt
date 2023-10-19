@@ -1,0 +1,8 @@
+main (){
+new int a;
+new string b;
+new int c;
+a = 1;
+b = "sal";
+print(a);
+}
