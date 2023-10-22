@@ -489,7 +489,6 @@ public class sintaxis extends lexico {
     private void exp_cond() {
 
         tipoVariableExp1 = p.lexema;//Obtenemos el tipo de la primera variable para comparar
-        System.out.println(p.lexema);
         exp_simple();
         System.out.println(p.lexema);
         op_relacio();
