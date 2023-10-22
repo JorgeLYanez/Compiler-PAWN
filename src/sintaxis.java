@@ -6,6 +6,10 @@ public class sintaxis extends lexico {
     boolean errorSintactico = false;
     ArrayList<Variables> listaVariables = new ArrayList<>();
     String tipoDato;
+    String valorAsignado;
+    String tipoVariable;
+    String tipoVariableExp1;
+    String tipoVariableExp2;
 
     public sintaxis() {
         try {
@@ -145,18 +149,23 @@ public class sintaxis extends lexico {
                 break;
 
             case 100: // Asignación
-                String tipoVariable = obtenerTipoVariable(p.lexema); // Obtener el ID
+                tipoVariableExp1 = p.lexema;
+                tipoVariable = obtenerTipoVariable(p.lexema); // Obtener el ID
                 p = p.sig;
                 if (p.token == 123) {
                     p = p.sig;
-                    String valorAsignado = p.lexema;
+                    valorAsignado = p.lexema;
                     exp_simple();
                     if (!errorSintactico) {
                         if (tipoVariable != null) {
-                           
                             if (validarTipoDato(tipoVariable, valorAsignado)) {
+                                if (validarDesbordamiento(tipoVariable, valorAsignado)) {
+                                } else {
+                                    System.out.println("Error en el renglon " + p.renglon + ": Desbordamiento de tipo " + tipoVariable + " valor asignado: " + valorAsignado);
+
+                                }
                             } else {
-                                System.out.println("Error en el renglón " + p.renglon + ": El tipo de dato no coincide para la variable '" + tipoVariable + "'.");
+                                System.out.println("Error en el renglon " + p.renglon + ": El tipo de dato no coincide para la variable '" + tipoVariable + "'.");
                             }
                         } else {
                             System.out.println("Error en el renglón " + p.renglon + ": La variable no ha sido definida.");
@@ -285,6 +294,13 @@ public class sintaxis extends lexico {
                 if (p.token == 117) {
                     p = p.sig;
                     if (p.token == 100 || p.token == 122) {
+                        tipoVariable = p.lexema;
+                        if (existeVariable(tipoVariable)) {
+
+                        } else {
+                            System.out.println("La variable: " + tipoVariable + "  no ha sido declarada");
+
+                        }
                         p = p.sig;
                         while (p.token == 124) {
                             p = p.sig;
@@ -329,13 +345,16 @@ public class sintaxis extends lexico {
     private void exp_simple() {
         if (p.token == 103 || p.token == 104) {
             signo();
+
         }
         termino();
+
         if (!errorSintactico) {
             if (p.token == 103 || p.token == 104) {
                 op_aditivo();
                 if (!errorSintactico) {
                     exp_simple();
+
                 }
 
             }
@@ -360,6 +379,22 @@ public class sintaxis extends lexico {
     private void factor() {
         switch (p.token) {
             case 100:
+                tipoVariableExp2 = p.lexema;
+                if (existeVariable(tipoVariableExp1)) {
+                    if (existeVariable(tipoVariableExp2)) {
+                    } else {
+                        System.out.println("Error: Renglon: " + p.renglon + " la variable: " + tipoVariableExp2 + "  no ha sido definida");
+                        errorSintactico = true;
+                    }
+                } else {
+                    System.out.println("Error: Renglon" + p.renglon + " la variable: " + tipoVariableExp1 + "  no ha sido definida");
+                    errorSintactico = true;
+                }
+                if (!compararTiposExpVariables(tipoVariableExp1, tipoVariableExp2)) {
+                    System.out.println("Error: Renglon" + p.renglon + " Tipos de datos nooo coinciden para las variables: " + tipoVariableExp1 + "  y  " + tipoVariableExp2);
+                    errorSintactico = true;
+                }
+                tipoVariable="id";
                 p = p.sig;
                 break;
 
@@ -440,7 +475,9 @@ public class sintaxis extends lexico {
                 p = p.sig;
                 break;
             case 104:
+                valorAsignado = p.lexema;
                 p = p.sig;
+                valorAsignado += p.lexema;
                 break;
 
             default:
@@ -450,10 +487,30 @@ public class sintaxis extends lexico {
     }
 
     private void exp_cond() {
+
+        tipoVariableExp1 = p.lexema;//Obtenemos el tipo de la primera variable para comparar
+        System.out.println(p.lexema);
         exp_simple();
+        System.out.println(p.lexema);
         op_relacio();
+        System.out.println(p.lexema);
+        tipoVariableExp2 = p.lexema;//segundo tipo de variable
         if (!errorSintactico) {
             exp_simple();
+            if (existeVariable(tipoVariableExp1)) {
+                if (existeVariable(tipoVariableExp2)) {
+                } else {
+                    System.out.println("Error: Renglon: " + p.renglon + " la variable: " + tipoVariableExp2 + "  no ha sido definida");
+                    errorSintactico = true;
+                }
+            } else {
+                System.out.println("Error: Renglon" + p.renglon + " la variable: " + tipoVariableExp1 + "  no ha sido definida");
+                errorSintactico = true;
+            }
+            if (!compararTiposExpVariables(tipoVariableExp1, tipoVariableExp2)) {
+                System.out.println("Error: Renglon" + p.renglon + " Tipos de datos no coinciden para las variables: " + tipoVariableExp1 + "  y  " + tipoVariableExp2);
+                errorSintactico = true;
+            }
             if (p.token == 114 || p.token == 115) {
                 p = p.sig;
                 exp_simple();
@@ -463,7 +520,6 @@ public class sintaxis extends lexico {
                 }
             }
         }
-
     }
 
     private void op_relacio() {
@@ -584,10 +640,60 @@ public class sintaxis extends lexico {
             case "boolean ":
                 // Verificar si el valor es "true" o "false" (sin distinción entre mayúsculas y minúsculas)
                 return valorAsignado.equalsIgnoreCase("true") || valorAsignado.equalsIgnoreCase("false");
-
+            
+            case "id":
+                return true;
             default:
                 return false;
         }
+    }
+
+    public static boolean validarDesbordamiento(String tipoVariable, String valorAsignado) {
+        switch (tipoVariable) {
+            case "int ":
+            try {
+                int numero = Integer.parseInt(valorAsignado);
+                if (numero <= 10000000 && numero >= -10000000) {
+                    return true;
+                } else {
+                    System.out.println("VALOR MAX PERMITIDO [INT] :+/- : " + " 10,000,000");
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                return false;
+            }
+
+            case "float ":
+            try {
+                float numero = Float.parseFloat(valorAsignado);
+                if (numero <= 1000.1000 && numero >= -1000.1000) {
+                    return true;
+                } else {
+                    System.out.println("VALOR MAX PERMITIDO [FLOAT]:+/- : " + " 1000.1000");
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                return false;
+            }
+
+            case "string ":
+                // Verificar si el valor está entre comillas dobles
+                return valorAsignado.startsWith("\"") && valorAsignado.endsWith("\"");
+
+            case "boolean ":
+                // Verificar si el valor es "true" o "false" (sin distinción entre mayúsculas y minúsculas)
+                return valorAsignado.equalsIgnoreCase("true") || valorAsignado.equalsIgnoreCase("false");
+
+            default:
+                return true;
+        }
+    }
+
+    private boolean compararTiposExpVariables(String nombreVariable1, String nombreVariable2) {
+        String tipoVariable1 = obtenerTipoVariable(nombreVariable1);
+        String tipoVariable2 = obtenerTipoVariable(nombreVariable2);
+
+        return tipoVariable1.equals(tipoVariable2);
     }
 
 }

@@ -7,7 +7,7 @@ public class lexico {
     boolean errorEncontrado = false;
 
     // Declarar ruta de archivo a leer
-    String archivo = "C:\\Users\\Jorge\\Documents\\Compilador18-10\\src\\codigo.txt";
+    String archivo = "C:\\Users\\Jorge\\Documents\\Compilador21-10\\src\\codigo.txt";
     int matriz[][] = {
 
             // letra @ _ digito + - * / ^ < > = ! & | ( ) { } , ; " eb tab nl . eof oc
